@@ -2212,7 +2212,7 @@ export default function Studio({ onPhotoSaved, savedPhotosCount }: StudioProps) 
         <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 flex flex-col items-center justify-center relative overflow-hidden" id="studio-viewport-card">
           
           <div className={isFullScreenCamera 
-            ? "fixed inset-0 z-50 bg-slate-950 flex flex-col items-center justify-center p-4 animate-fade-in select-none" 
+            ? "fixed inset-0 z-50 bg-slate-950 flex flex-col items-center justify-center p-2 sm:p-4 animate-fade-in select-none" 
             : "w-full aspect-[4/3] bg-slate-950 rounded-2xl relative overflow-hidden shadow-inner flex items-center justify-center select-none"
           }>
             
@@ -2248,7 +2248,7 @@ export default function Studio({ onPhotoSaved, savedPhotosCount }: StudioProps) 
               width={640}
               height={480}
               className={isFullScreenCamera 
-                ? "max-h-[75vh] max-w-full aspect-[4/3] w-auto h-auto rounded-3xl shadow-2xl border-4 border-white/20 object-contain transition-all duration-300" 
+                ? "w-full max-w-[98vw] md:max-w-[85vw] h-auto max-h-[80vh] md:max-h-[85vh] aspect-[4/3] rounded-2xl md:rounded-3xl shadow-2xl border-2 md:border-4 border-white/25 object-contain transition-all duration-300" 
                 : "w-full h-full object-cover"
               }
             ></canvas>
