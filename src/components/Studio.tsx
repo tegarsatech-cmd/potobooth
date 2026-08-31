@@ -90,8 +90,6 @@ export default function Studio({ onPhotoSaved, savedPhotosCount }: StudioProps) 
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [cameraError, setCameraError] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'physical' | 'virtual'>('physical');
-  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user'); // Camera flip state
-  const [isMirrored, setIsMirrored] = useState<boolean>(true); // Camera mirror/normal state
 
   // Virtual Camera Backdrop States
   const [virtualBackdrop, setVirtualBackdrop] = useState<BackdropType>('sunset');
@@ -197,7 +195,7 @@ export default function Studio({ onPhotoSaved, savedPhotosCount }: StudioProps) 
   };
 
   // Initialize Physical Webcam Stream
-  const initPhysicalCamera = async (currentFacingMode: 'user' | 'environment' = facingMode) => {
+  const initPhysicalCamera = async () => {
     try {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
@@ -210,7 +208,7 @@ export default function Studio({ onPhotoSaved, savedPhotosCount }: StudioProps) 
           video: { 
             width: { ideal: 1280 },
             height: { ideal: 720 },
-            facingMode: currentFacingMode 
+            facingMode: 'user' 
           },
           audio: false
         });
@@ -218,7 +216,7 @@ export default function Studio({ onPhotoSaved, savedPhotosCount }: StudioProps) 
         console.warn("Retrying with broadest possible camera fallbacks...", innerErr);
         // Fallback constraint to ensure it supports virtually all webcams and sandboxed frames
         mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: currentFacingMode },
+          video: { facingMode: 'user' },
           audio: false
         });
       }
@@ -256,11 +254,11 @@ export default function Studio({ onPhotoSaved, savedPhotosCount }: StudioProps) 
 
   useEffect(() => {
     // Attempt physical camera first, fallback gracefully to virtual if blocked
-    initPhysicalCamera(facingMode);
+    initPhysicalCamera();
     return () => {
       stopPhysicalCamera();
     };
-  }, [facingMode]);
+  }, []);
 
   // Safe binding of the stream object to the video ref once it renders in the DOM
   useEffect(() => {
@@ -315,16 +313,12 @@ export default function Studio({ onPhotoSaved, savedPhotosCount }: StudioProps) 
       // Physical webcam mode
       const video = videoRef.current;
       if (video && video.readyState >= 2) {
-        // Draw video mirrored if option is active
-        if (isMirrored) {
-          ctx.translate(width, 0);
-          ctx.scale(-1, 1);
-        }
+        // Draw video mirrored (as requested, always mirrored for natural selfie/photobooth look)
+        ctx.translate(width, 0);
+        ctx.scale(-1, 1);
         ctx.drawImage(video, 0, 0, width, height);
-        if (isMirrored) {
-          ctx.restore();
-          ctx.save();
-        }
+        ctx.restore();
+        ctx.save();
         frameDrawn = true;
       } else {
         // Draw loading camera placeholder
@@ -2202,31 +2196,7 @@ export default function Studio({ onPhotoSaved, savedPhotosCount }: StudioProps) 
             <p className="text-[10px] text-slate-400 mt-0.5 font-medium">Hubungkan webcam fisik Anda untuk memulai sesi foto interaktif.</p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-            {/* Flip Camera Control */}
-            <button
-              type="button"
-              onClick={() => setFacingMode(prev => prev === 'user' ? 'environment' : 'user')}
-              className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition flex items-center gap-1.5 border border-slate-200"
-              title="Balik Kamera (Depan / Belakang)"
-            >
-              🔄 <span>Kamera: {facingMode === 'user' ? 'Depan' : 'Belakang'}</span>
-            </button>
-
-            {/* Mirror Toggle Control */}
-            <button
-              type="button"
-              onClick={() => setIsMirrored(prev => !prev)}
-              className={`px-3.5 py-2 text-xs font-bold rounded-xl transition flex items-center gap-1.5 border ${
-                isMirrored 
-                  ? 'bg-indigo-50 border-indigo-200 text-indigo-700 font-extrabold' 
-                  : 'bg-slate-100 border-slate-200 text-slate-700'
-              }`}
-              title="Mirror Mode"
-            >
-              🪞 <span>Mirror: {isMirrored ? 'Aktif' : 'Normal'}</span>
-            </button>
-
+          <div className="flex items-center gap-2 w-full lg:w-auto">
             <button
               type="button"
               onClick={() => setIsFullScreenCamera(true)}
@@ -2357,31 +2327,7 @@ export default function Studio({ onPhotoSaved, savedPhotosCount }: StudioProps) 
                       className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition flex items-center gap-1 border border-slate-200"
                     >
                       <Minimize2 className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">Keluar Layar Penuh</span>
-                    </button>
-
-                    {/* Camera Flip Control in Full Screen */}
-                    <button
-                      type="button"
-                      onClick={() => setFacingMode(prev => prev === 'user' ? 'environment' : 'user')}
-                      className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition flex items-center gap-1 border border-slate-200"
-                      title="Balik Kamera"
-                    >
-                      🔄 <span className="hidden sm:inline">Kamera: {facingMode === 'user' ? 'Depan' : 'Belakang'}</span>
-                    </button>
-
-                    {/* Mirror Toggle in Full Screen */}
-                    <button
-                      type="button"
-                      onClick={() => setIsMirrored(prev => !prev)}
-                      className={`px-3 py-2 text-xs font-bold rounded-xl transition flex items-center gap-1 border ${
-                        isMirrored 
-                          ? 'bg-indigo-50 border-indigo-200 text-indigo-700 font-extrabold' 
-                          : 'bg-slate-100 border-slate-200 text-slate-700'
-                      }`}
-                      title="Mirroring"
-                    >
-                      🪞 <span className="hidden sm:inline">Mirror: {isMirrored ? 'Aktif' : 'Normal'}</span>
+                      <span>Keluar Layar Penuh</span>
                     </button>
                   </div>
 
@@ -2598,7 +2544,12 @@ export default function Studio({ onPhotoSaved, savedPhotosCount }: StudioProps) 
 
           {/* Color Sub-option */}
           <div className="border-t border-slate-100 pt-3">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2">Warna Bingkai Dasar</span>
+            <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider block mb-1">
+              🎨 Warna Dasar Lembar Bingkai
+            </span>
+            <p className="text-[10px] text-slate-400 mb-2 leading-relaxed">
+              Mengubah warna latar belakang seluruh lembar cetak kolase / strip foto final Anda.
+            </p>
             <div className="grid grid-cols-4 gap-2">
               {frameColors.map((c) => (
                 <button
@@ -2607,7 +2558,7 @@ export default function Studio({ onPhotoSaved, savedPhotosCount }: StudioProps) 
                   title={c.name}
                   className={`p-1.5 rounded-lg border text-center transition-all flex items-center justify-center gap-1.5 ${
                     selectedFrameColor === c.id
-                      ? 'border-indigo-600 bg-indigo-50/20 ring-1 ring-indigo-500/20'
+                      ? 'border-indigo-600 bg-indigo-50/20 ring-1 ring-indigo-500/20 shadow-sm font-bold'
                       : 'border-slate-100 bg-white hover:bg-slate-50'
                   }`}
                 >
@@ -2615,6 +2566,7 @@ export default function Studio({ onPhotoSaved, savedPhotosCount }: StudioProps) 
                     className="w-4 h-4 rounded-full border border-slate-200 block" 
                     style={{ backgroundColor: c.bg }}
                   ></span>
+                  <span className="text-[9px] text-slate-600 font-medium hidden sm:inline">{c.name}</span>
                 </button>
               ))}
             </div>
